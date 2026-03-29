@@ -1,0 +1,908 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Blu-ray Collection</title>
+  <meta name="theme-color" content="#ffffff">
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <style>
+    :root {
+      --ink: #202124;
+      --muted: #676f7a;
+      --accent: #6b7280;
+      --ring: rgba(107, 114, 128, 0.22);
+      --border: rgba(32, 33, 36, 0.12);
+      --shadow: 0 10px 24px rgba(32, 33, 36, 0.08);
+      --radius: 18px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      min-height: 100%;
+      color: var(--ink);
+      font-family: "Segoe UI", "Trebuchet MS", "Helvetica Neue", sans-serif;
+      background: #ffffff;
+    }
+
+    .page {
+      width: min(1000px, 92vw);
+      margin: 20px auto 28px;
+    }
+
+    .hero {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #ffffff;
+      box-shadow: var(--shadow);
+      padding: clamp(16px, 3vw, 28px);
+      animation: fadeInUp 0.45s ease-out;
+    }
+
+    h1 {
+      margin: 0;
+      line-height: 1.1;
+      letter-spacing: 0.2px;
+      font-size: clamp(1.45rem, 4vw, 2.3rem);
+    }
+
+    .sub {
+      margin: 8px 0 18px;
+      color: var(--muted);
+      font-size: clamp(0.93rem, 2.7vw, 1.02rem);
+    }
+
+    .search-wrap {
+      position: relative;
+      display: grid;
+      gap: 8px;
+      margin-top: 20px;
+    }
+
+    .search-wrap input {
+      width: 100%;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--ink);
+      outline: none;
+      padding: 12px 14px;
+      font-size: 1rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .search-wrap input:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 4px var(--ring);
+    }
+
+    .meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.95rem;
+      flex-wrap: wrap;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: flex-end;
+      margin-top: 2px;
+    }
+
+    .refresh-btn {
+      border: 1px solid rgba(32, 33, 36, 0.2);
+      border-radius: 10px;
+      background: #ffffff;
+      color: #2b3138;
+      font-size: 0.9rem;
+      padding: 8px 10px;
+      cursor: pointer;
+    }
+
+    .refresh-btn:disabled {
+      cursor: default;
+      opacity: 0.6;
+    }
+
+    .list {
+      list-style: none;
+      margin: 16px 0 0;
+      padding: 0;
+      display: block;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: #ffffff;
+      overflow: hidden;
+      animation: fadeIn 0.5s ease;
+    }
+
+    .item {
+      margin: 0;
+      padding: 11px 14px;
+      line-height: 1.35;
+      background: transparent;
+      border-bottom: 1px solid rgba(32, 33, 36, 0.09);
+    }
+
+    .item:last-child {
+      border-bottom: 0;
+    }
+
+    .empty {
+      margin: 16px 0 0;
+      border: 1px dashed rgba(32, 33, 36, 0.25);
+      border-radius: 12px;
+      background: #ffffff;
+      color: var(--muted);
+      padding: 14px;
+      text-align: center;
+    }
+
+    .status {
+      margin-top: 12px;
+      color: #7e2e2e;
+      font-size: 0.95rem;
+    }
+
+    .pill {
+      border: 1px solid rgba(32, 33, 36, 0.18);
+      color: #4f5661;
+      background: #ffffff;
+      border-radius: 999px;
+      padding: 3px 10px;
+      font-size: 0.83rem;
+      white-space: nowrap;
+    }
+
+    @media (max-width: 600px) {
+      .page {
+        width: 94vw;
+        margin-top: 14px;
+      }
+
+      .hero {
+        border-radius: 14px;
+        padding: 14px;
+      }
+
+      .item {
+        padding: 10px 12px;
+      }
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(8px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+  </style>
+</head>
+<body>
+  <main class="page">
+    <section class="hero">
+      <h1>My Blu-ray Collection</h1>
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="Search titles..." autocomplete="off" spellcheck="false">
+        <div class="meta">
+          <span id="resultCount">Loading...</span>
+          <span class="pill" id="generatedAt">JSON: waiting...</span>
+        </div>
+        <div class="actions">
+          <button id="refreshCacheBtn" class="refresh-btn" type="button">Refresh Cached Copy</button>
+        </div>
+      </div>
+
+      <div id="status" class="status" aria-live="polite"></div>
+      <ul id="list" class="list" aria-live="polite"></ul>
+      <div id="empty" class="empty" hidden>No titles match your search.</div>
+    </section>
+  </main>
+
+  <script id="bluraysData" type="application/json">{
+  "generated_at_utc": "2026-03-29T22:35:08.153093+00:00",
+  "count": 530,
+  "titles": [
+    "007 - Quantum Of Solace",
+    "101 Dalmatians (1961)",
+    "12 Angry Men",
+    "12 Years A Slave ",
+    "127 Hours",
+    "17 Again",
+    "1917",
+    "2001: A Space Odyssey",
+    "2010 - The Year We Make Contact",
+    "21 Jump Street",
+    "22 Jump Street",
+    "24 Hour Party People",
+    "28 Years Later",
+    "300",
+    "3:10 To Yuma",
+    "A Bridge Too Far",
+    "A Bug's Life",
+    "A Christmas Carol (2009)",
+    "A Clockwork Orange",
+    "A Minecraft Movie",
+    "A Quiet Place",
+    "Ad Astra",
+    "Adjustment Bureau",
+    "Akira",
+    "Aladdin (1992)",
+    "Alice in Wonderland (1951)",
+    "Alien",
+    "Alien Anthology",
+    "Alien Covenant",
+    "Alien Romulus",
+    "Amazing Spider-Man 2",
+    "Amelie",
+    "American Beauty",
+    "American Gangster",
+    "American Pie",
+    "American Pie 2",
+    "American Psycho",
+    "American Sniper",
+    "An American Werewolf in London",
+    "Angels & Demons",
+    "Apocalypse Now Final Cut",
+    "Apocalypto",
+    "Apollo 13",
+    "Appleseed - Ex Machina",
+    "Argo",
+    "Armageddon",
+    "Armstrong",
+    "Avatar",
+    "Avatar 3D",
+    "Avatar: The Way of Water",
+    "Babel",
+    "Back  to the Future Trilogy",
+    "Bambi",
+    "Band Of Brothers",
+    "Basil the Great Mouse Detective",
+    "Batman - Dark Knight, The",
+    "Batman Begins",
+    "Beauty & The Beast (1991)",
+    "Beauty and the Beast (2017)",
+    "Beetlejuice",
+    "Beowulf",
+    "Big Hero 6",
+    "Big Trouble In Little China",
+    "Black Hawk Down",
+    "Black Mirror: Series 3",
+    "Black Mirror: The Complete Fourth Series",
+    "Black Rain",
+    "Black Swan",
+    "Blade",
+    "Blade Runner 2049",
+    "Blade Runner: The Final Cut",
+    "Blood Diamond",
+    "Bohemian Rhapsody",
+    "Bone Tomahawk",
+    "Boogie Nights",
+    "Boyz N the Hood",
+    "Bram Stoker's Dracula",
+    "Brave",
+    "Bridge of Spies",
+    "Captain Philips",
+    "Carlito's Way",
+    "Cars",
+    "Cars 2",
+    "Casino",
+    "Casino Royale (2006)",
+    "Catch Me If You Can",
+    "Chappie",
+    "Charlie And The Chocolate Factory",
+    "Chronicle",
+    "Click",
+    "Close Encounters Of The Third Kind",
+    "Coco",
+    "Code Name: Geronimo - The Hunt for Osama Bin Laden",
+    "Commando",
+    "Contact",
+    "Crash (2004)",
+    "Crouching Tiger Hidden Dragon",
+    "Curious Case Of Benjamin Button, The",
+    "Dallas Buyers Club",
+    "Dances with Wolves",
+    "Dark Knight Rises, The",
+    "Dark Shadows",
+    "Darkest Hour",
+    "Das Boot",
+    "Dawn Of The Planet Of The Apes",
+    "Deadpool",
+    "Diana",
+    "Die Hard",
+    "Die Hard 2",
+    "District 9",
+    "Django Unchained",
+    "Donnie Darko",
+    "Dorian Gray",
+    "Dr Strangelove",
+    "Drive",
+    "Dumbo (1941)",
+    "Dune (2021)",
+    "Dune: Part 2",
+    "Dunkirk",
+    "E.T. - The Extra-Terrestrial",
+    "Edge Of Tomorrow",
+    "Edward Scissorhands",
+    "Elf",
+    "End Of Watch",
+    "Enter The Dragon",
+    "Escape From New York",
+    "Escape from New York (2018 2 Disc Remaster)",
+    "Event Horizon",
+    "Everest",
+    "Evil Dead II",
+    "Ex Machina",
+    "Fantasia",
+    "Fantastic Beasts & Where To Find Them",
+    "Fantastic Mr. Fox",
+    "Fargo",
+    "Fast & Furious",
+    "Fast & Furious 6",
+    "Fast & The Furious, The",
+    "Ferris Bueller's Day Off",
+    "Fight Club",
+    "Finding Dory",
+    "Finding Nemo",
+    "For All Mankind",
+    "Forrest Gump",
+    "Fright Night",
+    "From Dusk Till Dawn",
+    "From the Earth to the Moon",
+    "Frozen",
+    "Frozen II",
+    "Full Metal Jacket",
+    "Fury",
+    "Get Out",
+    "Ghost In The Shell (2017)",
+    "Ghostbusters",
+    "Ghostbusters & Ghostbusters 2",
+    "Ghostbusters - Afterlife",
+    "Gladiator",
+    "Gnomeo & Juliet",
+    "Godfather Trilogy",
+    "Goodfellas",
+    "Goosebumps 2",
+    "Gran Torino",
+    "Gravity",
+    "Gremlins",
+    "Grindhouse",
+    "Guardians Of The Galaxy",
+    "Guardians Of The Galaxy Vol. 2",
+    "Hackers",
+    "Hacksaw Ridge",
+    "Halloween",
+    "Hannibal",
+    "Harry Brown",
+    "Harry Potter - Complete Collection",
+    "Heat",
+    "Hellboy",
+    "Home",
+    "Hostel",
+    "Hostel - Part II",
+    "Hostel Part III",
+    "Hot Fuzz",
+    "Hotel Transylvania",
+    "How To Train Your Dragon",
+    "How the Grinch Stole Christmas",
+    "How to Train Your Dragon 2",
+    "Howl's Moving Castle",
+    "Hugo",
+    "Hunger Games, The",
+    "Hunt For Red October",
+    "I am Legend",
+    "I, Robot",
+    "Ice Age 4 - Continental Drift ",
+    "Imitation Game, The",
+    "In Time",
+    "In the Shadow of the Moon",
+    "Inception",
+    "Incredibles 2",
+    "Independence Day",
+    "Indiana Jones: Complete Adventures",
+    "Inglourious Basterds",
+    "Inside Out",
+    "Interstellar",
+    "Interview with the Vampire",
+    "Into The Wild",
+    "Iron Man 2",
+    "It's A Wonderful Life",
+    "Jackie Brown",
+    "Jarhead",
+    "Jaws",
+    "Jeepers Creepers",
+    "John Wick",
+    "Jojo Rabbit",
+    "Joker",
+    "Jumanji: Welcome To The Jungle",
+    "Jumper",
+    "Jurassic Park Triology Collection",
+    "Jurassic World",
+    "Jurassic World - Fallen Kingdom",
+    "Jurassic World Dominion",
+    "Jurassic World Rebirth",
+    "Justice League",
+    "Kiki's Delivery Service",
+    "Kill Bill Volume 1",
+    "Kill Bill Volume 2",
+    "King's Speech",
+    "La La Land",
+    "Labyrinth",
+    "Lady and the Tramp",
+    "Late Night with the Devil",
+    "Le Mans '66",
+    "Legend",
+    "Lego Movie, The",
+    "Leon",
+    "Les Mis\u00e9rables",
+    "Lethal Weapon",
+    "Life",
+    "Life Of Pi",
+    "Lincoln Lawyer",
+    "Lock, Stock & Two Smoking Barrels",
+    "Logan",
+    "London 2012 Olympic Games",
+    "Lone Survivor",
+    "Lord Of The Rings Extended Trilogy",
+    "Lord Of The Rings Trilogy",
+    "Lost Boys, The",
+    "MIB Trilogy",
+    "Mad Max: Fury Road",
+    "Man On Fire",
+    "Man On Wire",
+    "Man United - Champions League Final",
+    "Manhunter",
+    "Marvellous",
+    "Mary Poppins (50th Anniversary)",
+    "Mary Shelley's Frankenstein",
+    "Master and Commander: The Far Side of the World",
+    "Matrix, The",
+    "Memento",
+    "Memories",
+    "Men In Black Trilogy",
+    "Midnight Express",
+    "Million Dollar Baby",
+    "Minority Report",
+    "Misery",
+    "Miss Peregrine's Home for Peculiar Children",
+    "Mission Impossible: Ghost Protocol",
+    "Mission Impossible: Ultimate Missions",
+    "Moana",
+    "Monsters",
+    "Monsters, Inc.",
+    "Moon",
+    "Murder On The Orient Express",
+    "My Neighbour Totoro",
+    "Mystic River",
+    "NASA's Greatest Missions - When We Left Earth",
+    "NEDS",
+    "National Lampoon Vacation Boxset",
+    "Nativity 2 - Danger in the Manger!",
+    "Nativity!",
+    "Night At The Museum",
+    "Night at the Museum 2",
+    "No Country For Old Men",
+    "No Time To Die",
+    "Northern Soul",
+    "Now You See Me",
+    "O Brother Where Art Thou?",
+    "Oblivion",
+    "Ocean's Eleven",
+    "Olympus Has Fallen",
+    "Once Upon A Time In... Hollywood",
+    "One Battle After Another",
+    "Oppenheimer",
+    "Paddington 2",
+    "Pan's Labyrinth",
+    "Paranormal Activity",
+    "Passengers",
+    "Percy Jackson: Lightning Thief",
+    "Percy Jackson: Sea of Monsters",
+    "Peter Rabbit",
+    "Peter Rabbit 2",
+    "Philomena",
+    "Pirates Of The Caribbean: Curse Of The Black Pearl",
+    "Pixar - Short Films Collection Volume 1",
+    "Pixar - Short Films Collection Volume 2",
+    "Pixels",
+    "Planet Earth",
+    "Platoon",
+    "Pocahontas",
+    "Point Break",
+    "Porco Rosso",
+    "Predator - Ultimate Edition",
+    "Predator 2",
+    "Predator : Badlands",
+    "Predators",
+    "Prey",
+    "Pride",
+    "Princess Mononoke",
+    "Prometheus",
+    "Psycho / The Birds",
+    "Pulp Fiction",
+    "Rain Man",
+    "Rambo",
+    "Rambo - First Blood (1982)",
+    "Ray",
+    "Ready Player One",
+    "Rear Window",
+    "Red Dragon",
+    "Requiem for a Dream",
+    "Reservoir Dogs",
+    "Resident Evil - Extinction",
+    "Ride Along",
+    "Rio",
+    "Rise Of The Planet Of Apes",
+    "Robin Hood - Prince of Thieves",
+    "RoboCop",
+    "Rocketman",
+    "Rocky",
+    "Rocky Balboa",
+    "Roofman",
+    "Rush",
+    "San Andreas",
+    "Saving Private Ryan",
+    "Saw",
+    "Saw II",
+    "Saw III",
+    "Scarface",
+    "Schindler's List",
+    "School of Rock",
+    "Scrooged",
+    "Secret Life Of Walter Mitty, The",
+    "Senna",
+    "Seven",
+    "Shaun of the Dead",
+    "Shazam!",
+    "Sherlock, Series 1",
+    "Sherlock, Series 2",
+    "Shutter Island",
+    "Silence of the Lambs, The",
+    "Sin City",
+    "Sin City 2 - A Dame to Kill For",
+    "Sing",
+    "Sing 2",
+    "Skyfall",
+    "Sleeping Beauty (1958)",
+    "Slumdog Millionaire",
+    "Snatch",
+    "Snow White & The Seven Dwarfs",
+    "Solo - A Star Wars Story",
+    "Source Code",
+    "South Park: Bigger, Longer and Uncut",
+    "Southpaw",
+    "Spectre",
+    "Spider-Man Homecoming",
+    "Spider-Man Trilogy",
+    "Spider-Man: Across The Spider-Verse",
+    "Spider-Man: Into The Spider-Verse",
+    "Spirited Away",
+    "Split",
+    "Stand By Me",
+    "Star Trek Beyond",
+    "Star Trek: Into Darkness",
+    "Star Trek: The Original Motion Picture Collection",
+    "Star Wars : Rogue One",
+    "Star Wars, Episode IX - The Rise Of Skywalker",
+    "Star Wars, Episode VII - The Force Awakens",
+    "Star Wars, Episode VIII - The Last Jedi",
+    "Star Wars: The Prequel Trilogy (Episodes I-III)",
+    "Stargate",
+    "Starship Troopers",
+    "Straight Outta Compton",
+    "Sucker Punch",
+    "Suicide Squad",
+    "Sunshine",
+    "Super 8",
+    "Superbad",
+    "Swordfish",
+    "T2 Trainspotting",
+    "TT3D: Closer To The Edge",
+    "Taken",
+    "Tangled",
+    "Taxi Driver",
+    "Tenet",
+    "Terminator 2 - Judgement Day (Skynet Edition)",
+    "Terminator 2: Judgment Day",
+    "Terminator Salvation",
+    "Texas Chainsaw",
+    "The Amazing Spider-Man",
+    "The Big Lebowski",
+    "The Blair Witch Project",
+    "The Blues Brothers",
+    "The Bourne Identity",
+    "The Bourne Ultimatum",
+    "The Boy and the Heron",
+    "The Boy in the Striped Pyjamas",
+    "The Bridge On the River Kwai",
+    "The Da Vinci Code",
+    "The Dark Crystal",
+    "The Day After Tomorrow",
+    "The Devil's Advocate",
+    "The Equalizer",
+    "The Evil Dead (2013)",
+    "The Exorcist",
+    "The Fifth Element",
+    "The Fighter",
+    "The First Purge",
+    "The Girl On The Train",
+    "The Girl With The Dragon Tattoo",
+    "The Goonies",
+    "The Grand Budapest Hotel",
+    "The Great Gatsby",
+    "The Greatest Showman",
+    "The Green Mile",
+    "The Grey",
+    "The Hateful Eight",
+    "The Hobbit - An Unexpected Journey",
+    "The Hobbit : Battle Of The Five Armies",
+    "The Hobbit: The Desolation of Smaug",
+    "The Hunger Games: Catching Fire",
+    "The Hurt Locker",
+    "The Inbetweeners 2",
+    "The Incredibles",
+    "The Italian Job",
+    "The Jungle Book (1967)",
+    "The Jungle Book (2016)",
+    "The Lion King",
+    "The Little Mermaid",
+    "The Lorax",
+    "The Martian",
+    "The Mask",
+    "The Maze Runner",
+    "The Mule",
+    "The Nightmare Before Christmas",
+    "The Nutcracker And The Four Realms",
+    "The Others",
+    "The Perfect Storm",
+    "The Predator",
+    "The Purge",
+    "The Queen",
+    "The Revenant",
+    "The Rocky Horror Picture Show",
+    "The Running Man",
+    "The Shawshank Redemption",
+    "The Shining",
+    "The Simpsons Movie",
+    "The Sixth Sense",
+    "The Social Network",
+    "The Terminator",
+    "The Theory of Everything",
+    "The Town",
+    "The Untouchables",
+    "The Usual Suspects",
+    "The Wizard of Oz",
+    "The Woman In Black",
+    "Thing, The (1982 & 2011 films, 2 Disc Set)",
+    "This Is England",
+    "Tinker Tailor Soldier Spy",
+    "Tombstone",
+    "Top Gun",
+    "Top Gun Maverick",
+    "Total Recall",
+    "Touching The Void",
+    "Toy Story",
+    "Toy Story 2",
+    "Toy Story 3",
+    "Toy Story of Terror!",
+    "Tracks",
+    "Trading Places",
+    "Training Day",
+    "Trainspotting",
+    "Trance",
+    "Transformers (2007)",
+    "Transformers : Revenge of the Fallen",
+    "Trolls",
+    "Trolls World Tour",
+    "True Grit",
+    "True Romance / Natural Born Killers",
+    "Truman Show",
+    "Twelve Monkeys",
+    "Twister",
+    "Unbroken",
+    "Unforgiven",
+    "Up",
+    "V for Vendetta",
+    "Valkyrie",
+    "Wall Street",
+    "Wall Street - Money Never Sleeps",
+    "Wall.E",
+    "War Horse",
+    "War of The Worlds",
+    "Warriors, The",
+    "Weird Science",
+    "Welcome To The Punch",
+    "What We Do In The Shadows",
+    "Whiplash",
+    "Wicked",
+    "Wicker Man",
+    "Wolf of Wall Street, The",
+    "Wonders Of The Solar System",
+    "World War Z",
+    "World's End, The",
+    "Wreck-It Ralph",
+    "Wrestler",
+    "X-Men - Dark Phoenix",
+    "X-Men - First Class",
+    "X-Men Apocalypse",
+    "X-Men Origins: Wolverine",
+    "X-Men Trilogy",
+    "X-Men: Days Of Future Past",
+    "Zero Dark Thirty",
+    "Zombieland",
+    "Zoolander - Two Movie Collection",
+    "Zootropolis"
+  ]
+}</script>
+
+  <script>
+    (function () {
+      var searchInput = document.getElementById('search');
+      var listEl = document.getElementById('list');
+      var resultCountEl = document.getElementById('resultCount');
+      var emptyEl = document.getElementById('empty');
+      var statusEl = document.getElementById('status');
+      var generatedAtEl = document.getElementById('generatedAt');
+      var refreshCacheBtn = document.getElementById('refreshCacheBtn');
+      var embeddedDataEl = document.getElementById('bluraysData');
+      var titles = [];
+
+      function normalize(value) {
+        return String(value || '').toLowerCase().replace(/\s+/g, ' ').trim();
+      }
+
+      function formatDate(isoDate) {
+        if (!isoDate) return 'JSON: no timestamp';
+        var d = new Date(isoDate);
+        if (Number.isNaN(d.getTime())) return 'JSON: timestamp unavailable';
+        return 'JSON: ' + d.toLocaleString('en-GB', { hour12: false });
+      }
+
+      function renderList(items) {
+        listEl.innerHTML = '';
+
+        if (!items.length) {
+          emptyEl.hidden = false;
+          return;
+        }
+
+        emptyEl.hidden = true;
+        var frag = document.createDocumentFragment();
+        for (var i = 0; i < items.length; i += 1) {
+          var li = document.createElement('li');
+          li.className = 'item';
+          li.textContent = items[i];
+          frag.appendChild(li);
+        }
+        listEl.appendChild(frag);
+      }
+
+      function applyFilter() {
+        var query = normalize(searchInput.value);
+        var filtered = !query
+          ? titles
+          : titles.filter(function (title) {
+              return normalize(title).indexOf(query) !== -1;
+            });
+
+        renderList(filtered);
+        resultCountEl.textContent = filtered.length + ' of ' + titles.length + ' titles';
+      }
+
+      function showError(message) {
+        statusEl.style.color = '#7e2e2e';
+        statusEl.textContent = message;
+        resultCountEl.textContent = 'Could not load titles';
+      }
+
+      function showInfo(message) {
+        statusEl.style.color = '#4f5661';
+        statusEl.textContent = message;
+      }
+
+      function refreshCachedCopy() {
+        if (!('serviceWorker' in navigator)) {
+          showError('Service worker is not supported in this browser.');
+          return;
+        }
+
+        refreshCacheBtn.disabled = true;
+        showInfo('Refreshing cached copy...');
+
+        Promise.all([
+          fetch('/index.html', { cache: 'no-store' }).then(function (response) {
+            if (!response.ok) {
+              throw new Error('HTTP ' + response.status);
+            }
+          }),
+          navigator.serviceWorker.getRegistration().then(function (registration) {
+            if (registration) {
+              return registration.update();
+            }
+          })
+        ])
+          .then(function () {
+            showInfo('Cached copy updated. Reloading...');
+            setTimeout(function () {
+              window.location.reload();
+            }, 350);
+          })
+          .catch(function (err) {
+            showError('Refresh failed. (' + err.message + ')');
+            refreshCacheBtn.disabled = false;
+          });
+      }
+
+      function readEmbeddedData() {
+        if (!embeddedDataEl) {
+          throw new Error('Embedded data block not found');
+        }
+
+        var payload = embeddedDataEl.textContent || '';
+        if (!payload.trim()) {
+          throw new Error('Embedded data is empty');
+        }
+
+        return JSON.parse(payload);
+      }
+
+      function init() {
+        try {
+          var data = readEmbeddedData();
+          titles = Array.isArray(data.titles) ? data.titles.slice() : [];
+          titles.sort(function (a, b) {
+            return String(a).localeCompare(String(b));
+          });
+
+          generatedAtEl.textContent = formatDate(data.generated_at_utc);
+          statusEl.style.color = '';
+          statusEl.textContent = '';
+          applyFilter();
+          searchInput.focus();
+        } catch (err) {
+          showError('Error reading embedded Blu-ray data. (' + err.message + ')');
+        }
+      }
+
+      searchInput.addEventListener('input', applyFilter);
+      refreshCacheBtn.addEventListener('click', refreshCachedCopy);
+      init();
+    })();
+  </script>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function () {
+        navigator.serviceWorker.register('/sw.js').catch(function (err) {
+          console.log('Service worker registration failed:', err);
+        });
+      });
+    }
+  </script>
+</body>
+</html>
+
+
