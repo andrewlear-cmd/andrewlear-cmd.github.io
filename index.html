@@ -257,7 +257,7 @@
   </main>
 
   <script id="collectionData" type="application/json">{
-  "generated_at_utc": "2026-06-06T20:49:33.637586+00:00",
+  "generated_at_utc": "2026-06-06T20:54:24.820625+00:00",
   "count": 894,
   "categories": [
     {
@@ -7538,7 +7538,7 @@
 
       function populateSubcategories() {
         if (!subcategoryFilter) {
-          return;
+          return [];
         }
 
         subcategoryFilter.innerHTML = '';
@@ -7555,6 +7555,8 @@
           option.textContent = subcategories[i];
           subcategoryFilter.appendChild(option);
         }
+
+        return subcategories;
       }
 
       function applyFilter() {
@@ -7643,9 +7645,73 @@
         return JSON.parse(payload);
       }
 
+      function getInitialFiltersFromUrl() {
+        if (typeof URLSearchParams !== 'function') {
+          return { category: '', subcategory: '', query: '' };
+        }
+
+        var params = new URLSearchParams(window.location.search || '');
+        return {
+          category: String(
+            params.get('category') ||
+            params.get('category_id') ||
+            params.get('cat') ||
+            ''
+          ).trim(),
+          subcategory: String(
+            params.get('subcategory') ||
+            params.get('subcat') ||
+            ''
+          ).trim(),
+          query: String(params.get('q') || params.get('search') || '').trim()
+        };
+      }
+
+      function trySelectCategory(rawValue) {
+        if (!categoryFilter || !rawValue) {
+          return false;
+        }
+
+        for (var i = 0; i < categoryFilter.options.length; i += 1) {
+          if (categoryFilter.options[i].value === rawValue) {
+            categoryFilter.value = rawValue;
+            return true;
+          }
+        }
+
+        var normalizedTarget = normalize(rawValue);
+        for (var j = 0; j < categoryFilter.options.length; j += 1) {
+          var option = categoryFilter.options[j];
+          if (normalize(option.textContent) === normalizedTarget) {
+            categoryFilter.value = option.value;
+            return true;
+          }
+        }
+
+        return false;
+      }
+
+      function trySelectSubcategory(rawValue) {
+        if (!subcategoryFilter || !rawValue) {
+          return false;
+        }
+
+        var normalizedTarget = normalize(rawValue);
+        for (var i = 0; i < subcategoryFilter.options.length; i += 1) {
+          var option = subcategoryFilter.options[i];
+          if (normalize(option.value) === normalizedTarget || normalize(option.textContent) === normalizedTarget) {
+            subcategoryFilter.value = option.value;
+            return true;
+          }
+        }
+
+        return false;
+      }
+
       function init() {
         try {
           var data = readEmbeddedData();
+          var initialFilters = getInitialFiltersFromUrl();
           items = Array.isArray(data.items) ? data.items.slice() : [];
           items.sort(function (a, b) {
             var categoryCmp = String(a.category_name || '').localeCompare(String(b.category_name || ''));
@@ -7656,7 +7722,18 @@
           });
 
           populateCategories(data.categories);
-          populateSubcategories();
+          trySelectCategory(initialFilters.category);
+
+          var subcategories = populateSubcategories();
+          if (subcategoryFilter) {
+            if (!trySelectSubcategory(initialFilters.subcategory) && subcategories.length === 1) {
+              subcategoryFilter.value = subcategories[0];
+            }
+          }
+
+          if (searchInput && initialFilters.query) {
+            searchInput.value = initialFilters.query;
+          }
 
           generatedAtEl.textContent = formatDate(data.generated_at_utc);
           statusEl.style.color = '';
@@ -7669,9 +7746,9 @@
       }
 
       function onCategoryChanged() {
-        populateSubcategories();
+        var subcategories = populateSubcategories();
         if (subcategoryFilter) {
-          subcategoryFilter.value = '';
+          subcategoryFilter.value = subcategories.length === 1 ? subcategories[0] : '';
         }
         applyFilter();
       }
