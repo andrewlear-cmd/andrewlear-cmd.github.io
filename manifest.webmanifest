@@ -1,6 +1,6 @@
 {
-  "name": "Blu-ray Collection",
-  "short_name": "Blu-rays",
+  "name": "Collection",
+  "short_name": "Collections",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
